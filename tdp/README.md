@@ -15,10 +15,13 @@ DCT_PIP="$HOME/.cache/pip"
 DCT_BUILD="$HOME/build"
 ```
 
+The git directory matchs to the local directory that contains the git repositories.
+The build directory matchs to the local directory where the archive is created.
+
 And the command :
 
 ```sh
-docker run --rm=true -it --env "USER_UID=$(id -u)" --env "USER_GID=$(id -g)" --volume "$DCT_PIP:/home/builder/.cache/pip/" --volume "$DCT_GIT:/home/builder/git/" --volume "$DCT_TDP:/home/builder/build" --workdir /home/builder/ <image>
+docker run --rm=true -it --env "USER_UID=$(id -u)" --env "USER_GID=$(id -g)" --volume "$DCT_PIP:/home/builder/.cache/pip/" --volume "$DCT_GIT:/home/builder/git/" --volume "$DCT_BUILD:/home/builder/build" --workdir /home/builder/ tdp_builder_python
 ```
 
 ## Sourcing the NodeJS environment
@@ -35,12 +38,12 @@ If you haven't cloned the repository before, do it, otherwise, it should be moun
 In addition to the git repository, create the requirement file to generate wheel files. The requirement file must contain :
 
 ```sh
-pip>=21.3.1
+echo "pip>=21.3.1
 jupyterhub-traefik-proxy==0.3.0
 jupyterhub_ldapauthenticator==1.3.2
 oauthenticator==15.1.0
 jupyterhub_yarnspawner==0.4.0
-psycopg2-binary==2.8.6
+psycopg2-binary==2.8.6" > $HOME/build/requirements.txt
 ```
 
 ## Generate wheels
@@ -54,6 +57,7 @@ python3.6 -m pip wheel --wheel-dir $HOME/build/dependencies/ --requirement $HOME
 Get the binary for traeffik and change its permissions
 
 ```sh
+mkdir $HOME/build/bin
 curl -L --output $HOME/build/bin/traefik "https://github.com/traefik/traefik/releases/download/v1.7.29/traefik_linux-amd64"
 chmod 755 $HOME/build/bin/traefik
 ```
@@ -63,7 +67,7 @@ chmod 755 $HOME/build/bin/traefik
 Add the next line :
 
 ```sh
-jupyterhub==2.3.1
+echo "jupyterhub==2.3.1" >> $HOME/build/requirements.txt
 ```
 
 ## Create archive
@@ -71,7 +75,8 @@ jupyterhub==2.3.1
 Create the archive with wheel files, the requirement file and the traeffik binary, then create the checksum
 
 ```sh
-tar cf jupyterhub-2.3.1-0.0.tar.gz $HOME/build
+cd $HOME
+tar cf jupyterhub-2.3.1-0.0.tar.gz build/
 sha256sum jupyterhub-2.3.1-0.0.tar.gz | sed 's#.*/# #' > jupyterhub-2.3.1-0.0.tar.gz.sha256
 ```
 
